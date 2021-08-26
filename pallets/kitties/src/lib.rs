@@ -145,12 +145,12 @@ pub mod pallet {
         #[pallet::weight(1_000)]
         pub fn breed(origin: OriginFor<T>, kitty_id_1: T::KittyIndex, kitty_id_2: T::KittyIndex) -> DispatchResult {
             let who = ensure_signed(origin)?;
-
+            // Ensure the parents are not same.
             ensure!(kitty_id_1 != kitty_id_2, Error::<T>::SameParentIndex);
-
+            // Ensure there're the parents in the Storage.
             let kitty1 = Self::kitties(kitty_id_1).ok_or(Error::<T>::InvalidKittyIndex)?;
             let kitty2 = Self::kitties(kitty_id_2).ok_or(Error::<T>::InvalidKittyIndex)?;
-
+            // Breed new kitty from the parents.
             let dna_1 = kitty1.0;
             let dna_2 = kitty2.0;
             let selector = Self::random_value(&who);
@@ -182,11 +182,11 @@ pub mod pallet {
         #[pallet::weight(1_000)]
         pub fn sell(origin: OriginFor<T>, kitty_id: T::KittyIndex, price: Option<BalanceOf<T>>) -> DispatchResult {
             let who = ensure_signed(origin)?;
-
+            // Ensure only the kitty owner can sell it.
             ensure!(Some(who.clone()) == Owner::<T>::get(kitty_id), Error::<T>::NotOwner);
-
+            // Set a price. If the price is None, it means the kitty is not for sale.
             ListForSale::<T>::mutate_exists(kitty_id, |p| *p = Some(price));
-
+            // Emit event.
             Self::deposit_event(Event::KittySell(who, kitty_id, price));
 
             Ok(())
@@ -197,27 +197,26 @@ pub mod pallet {
         pub fn buy(origin: OriginFor<T>, kitty_id: T::KittyIndex) -> DispatchResult {
             let buyer = ensure_signed(origin)?;
             let owner = Owner::<T>::get(kitty_id).unwrap();
-
+            // Ensure the buyer is not the owner.
             ensure!(Some(buyer.clone()) != Some(owner.clone()), Error::<T>::BuyerIsOwner);
-
+            // If the price in the ListForSale is None, the kitty is not for sale.
             let amount = ListForSale::<T>::get(kitty_id).ok_or(Error::<T>::NotForSale)?;
-
+            // Check the buyer with enough balance to buy. Ensure the free balance can pay and stake also.
             let buyer_balance = T::Currency::free_balance(&buyer);
             let stake_amount = T::StakeForEachKitty::get();
-
             ensure!(buyer_balance > (amount + stake_amount), Error::<T>::NotEnoughBalanceForBuying);
-
+            // Staking for own the kitty.
             T::Currency::reserve(&buyer, stake_amount)
                 .map_err(|_| Error::<T>::NotEnoughBalanceForStaking)?;
-
+            // Unstaking from the ex-ownder (the seller).
 			T::Currency::unreserve(&owner, stake_amount);
-
+            // Transfer the price from buyer to the seller.
 			T::Currency::transfer(&buyer, &owner, amount, frame_support::traits::ExistenceRequirement::KeepAlive)?;
-
+            // Remove from the List.
 			ListForSale::<T>::remove(kitty_id);
-
+            // Update the storage with the new owner.
             Owner::<T>::insert(kitty_id, Some(buyer.clone()));
-
+            // Emit the event.
             Self::deposit_event(Event::KittyTransfer(owner, buyer, kitty_id));
 
             Ok(())
