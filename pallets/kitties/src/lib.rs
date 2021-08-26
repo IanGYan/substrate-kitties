@@ -48,9 +48,9 @@ pub mod pallet {
 	#[pallet::metadata(T::AccountId = "AccountId")]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-        KittyCreate(T::AccountId, T::KittyIndex),
-        KittyTransfer(T::AccountId, T::AccountId, T::KittyIndex),
-        KittySell(T::AccountId, T::KittyIndex, Option<BalanceOf<T>>),
+        KittyCreated(T::AccountId, T::KittyIndex),
+        KittyTransferred(T::AccountId, T::AccountId, T::KittyIndex),
+        KittyListed(T::AccountId, T::KittyIndex, Option<BalanceOf<T>>),
 	}
 
     /// Storage for tracking all the kitties
@@ -114,7 +114,7 @@ pub mod pallet {
             // Owner::<T>::insert(kitty_id, Some(who.clone()));
             // KittiesCount::<T>::put(kitty_id + 1u32.into());
             //
-            // Self::deposit_event(Event::KittyCreate(who, kitty_id));
+            // Self::deposit_event(Event::KittyCreated(who, kitty_id));
             // ----------
             Self::new_kitty_with_stake(&who, dna)?;
 
@@ -138,7 +138,7 @@ pub mod pallet {
             // Update storage.
             Owner::<T>::insert(kitty_id, Some(new_owner.clone()));
             // Emit the event.
-            Self::deposit_event(Event::KittyTransfer(who, new_owner, kitty_id));
+            Self::deposit_event(Event::KittyTransferred(who, new_owner, kitty_id));
 
             Ok(())
         }
@@ -173,7 +173,7 @@ pub mod pallet {
             // Kitties::<T>::insert(kitty_id, Some(Kitty(new_dna)));
             // Owner::<T>::insert(kitty_id, Some(who.clone()));
             // KittiesCount::<T>::put(kitty_id + 1u32.into());
-            // Self::deposit_event(Event::KittyCreate(who, kitty_id));
+            // Self::deposit_event(Event::KittyCreated(who, kitty_id));
             // ----------
             Self::new_kitty_with_stake(&who, new_dna)?;
 
@@ -189,7 +189,7 @@ pub mod pallet {
             // Set a price. If the price is None, it means the kitty is not for sale.
             ListForSale::<T>::mutate_exists(kitty_id, |p| *p = Some(price));
             // Emit event.
-            Self::deposit_event(Event::KittySell(who, kitty_id, price));
+            Self::deposit_event(Event::KittyListed(who, kitty_id, price));
 
             Ok(())
         }
@@ -219,7 +219,7 @@ pub mod pallet {
             // Update the storage with the new owner.
             Owner::<T>::insert(kitty_id, Some(buyer.clone()));
             // Emit the event.
-            Self::deposit_event(Event::KittyTransfer(owner, buyer, kitty_id));
+            Self::deposit_event(Event::KittyTransferred(owner, buyer, kitty_id));
 
             Ok(())
         }
@@ -257,7 +257,7 @@ pub mod pallet {
             Owner::<T>::insert(kitty_id, Some(owner.clone()));
             KittiesCount::<T>::put(kitty_id + 1u32.into());
 
-            Self::deposit_event(Event::KittyCreate(owner.clone(), kitty_id));
+            Self::deposit_event(Event::KittyCreated(owner.clone(), kitty_id));
 
             Ok(())
         }

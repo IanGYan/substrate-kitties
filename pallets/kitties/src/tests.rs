@@ -1,6 +1,15 @@
-use crate::mock::*;
+use crate::mock::{Event as TestEvent, new_test_ext, KittiesModule, Origin, System, Test};
 use frame_support::{assert_ok, assert_noop};
 use super::*;
+
+
+// Wrap System::assert_has_event() to macro assert_has_event!
+// Usage example: assert_has_event!(Event::<Test>::KittyCreated(1,0))
+macro_rules! assert_has_event {
+	($x:expr) => {
+		System::assert_has_event(TestEvent::KittiesModule($x))
+	}
+}
 
 #[test]
 fn create_works() {
@@ -9,6 +18,9 @@ fn create_works() {
 		assert_ok!(KittiesModule::create(Origin::signed(account_id)));
 		assert_eq!(KittiesCount::<Test>::get(), Some(1));
 		assert_eq!(Owner::<Test>::get(0), Some(1));
+		// Test the Event emitted already.
+		// Event::<Test>::KittyCreated(Owner, KittyIndex)
+		assert_has_event!(Event::<Test>::KittyCreated(1,0));
 	});
 }
 
@@ -39,7 +51,9 @@ fn transfer_works() {
 		// Transfer AccountID 1 to AccountID 2, KittyIndex = 0
 		assert_ok!(KittiesModule::transfer(Origin::signed(account_id), 2, 0));
 		assert_eq!(Owner::<Test>::get(0), Some(2));
-
+		// Test the Event emitted already.
+		// KittyTransferred(Owner, New Owner, KittyIndex)
+		assert_has_event!(Event::<Test>::KittyTransferred(1, 2, 0));
 	});
 }
 
@@ -75,6 +89,9 @@ fn breed_works() {
 		// Breed a kitty index=2 from 0&1, by AccountID =1.
 		assert_ok!(KittiesModule::breed(Origin::signed(1), 0, 1));
 		assert_eq!(KittiesCount::<Test>::get(), Some(3));
+		// Test the Event emitted already.
+		// Event::<Test>::KittyCreated(Owner, KittyIndex)
+		assert_has_event!(Event::<Test>::KittyCreated(1, 2));
 	});
 }
 
@@ -123,6 +140,9 @@ fn sell_works() {
 		let price: u128 = 1_500;
 		assert_ok!(KittiesModule::sell(Origin::signed(1), 0, Some(price)));
 		assert_eq!(ListForSale::<Test>::get(0), Some(price));
+		// Test the Event emitted already.
+		// KittyListed(T::AccountId, T::KittyIndex, Option<BalanceOf<T>>)
+		assert_has_event!(Event::<Test>::KittyListed(1, 0, Some(price)));
 	});
 }
 
@@ -148,6 +168,9 @@ fn buy_works() {
 		// AccountID=2 buy KittyIndex=0 (from AccountID=1)
 		assert_ok!(KittiesModule::buy(Origin::signed(2), 0));
 		assert_eq!(Owner::<Test>::get(0), Some(2));
+		// Test the Event emitted.
+		// KittyTransferred(Seller, Buyer, KittyIndex)
+		assert_has_event!(Event::<Test>::KittyTransferred(1, 2, 0));
 	});
 }
 
