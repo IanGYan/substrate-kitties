@@ -76,7 +76,7 @@ impl pallet_balances::Config for Test {
 impl pallet_randomness_collective_flip::Config for Test {}
 
 parameter_types! {
-    pub const StakeForEachKitty: u32 = 1_000;
+    pub const StakeForEachKitty: u128 = 10_000;
 }
 
 impl pallet_kitties::Config for Test {
@@ -93,7 +93,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 
 	// Genesis funds
 	pallet_balances::GenesisConfig::<Test> {
-		balances: vec![(1, 10_000_000_000), (2, 10_000_000_000), (3, 900_000_000)],
+		balances: vec![(1, 10_000_000_000), (2, 10_000_000_000), (3, 9_000)],
 	}
 	.assimilate_storage(&mut storage)
 	.unwrap();

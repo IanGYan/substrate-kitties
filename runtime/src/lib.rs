@@ -308,7 +308,7 @@ impl pallet_template::Config for Runtime {
 }
 
 parameter_types! {
-	pub const StakeForEachKitty: u32 = 1_000;
+	pub const StakeForEachKitty: u128 = 1_000;
 }
 
 /// Configure the pallet-template in pallets/template.

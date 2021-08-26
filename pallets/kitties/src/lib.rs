@@ -94,27 +94,27 @@ pub mod pallet {
         pub fn create(origin: OriginFor<T>) -> DispatchResult{
             let who = ensure_signed(origin)?;
 
-            T::Currency::reserve(&who, T::StakeForEachKitty::get()).map_err(|_| Error::<T>::NotEnoughBalanceForStaking)?;
-
             let dna = Self::random_value(&who);
 
-            // Optimize with helper function new_kitty()
+            // Optimize with helper function new_kitty_with_stake()
             // ----------
-            let kitty_id = match Self::kitties_count() {
-                Some(id) => {
-                    ensure!(id != T::KittyIndex::max_value(), Error::<T>::KittiesCountOverflow);
-                    id
-                },
-                None => 0u32.into()
-            };
-
-            Kitties::<T>::insert(kitty_id, Some(Kitty(dna)));
-            Owner::<T>::insert(kitty_id, Some(who.clone()));
-            KittiesCount::<T>::put(kitty_id + 1u32.into());
-
-            Self::deposit_event(Event::KittyCreate(who, kitty_id));
+            // let kitty_id = match Self::kitties_count() {
+            //    Some(id) => {
+            //        ensure!(id != T::KittyIndex::max_value(), Error::<T>::KittiesCountOverflow);
+            //        id
+            //    },
+            //    None => 0u32.into()
+            // };
+            // let stake_amount = T::StakeForEachKitty::get();
+            // T::Currency::reserve(&who, stake_amount)
+            //     .map_err(|_| Error::<T>::NotEnoughBalanceForStaking)?;
+            // Kitties::<T>::insert(kitty_id, Some(Kitty(dna)));
+            // Owner::<T>::insert(kitty_id, Some(who.clone()));
+            // KittiesCount::<T>::put(kitty_id + 1u32.into());
+            //
+            // Self::deposit_event(Event::KittyCreate(who, kitty_id));
             // ----------
-            // Self::new_kitty(&who, dna)?;
+            Self::new_kitty_with_stake(&who, dna)?;
 
             Ok(())
         }
@@ -123,11 +123,19 @@ pub mod pallet {
         #[pallet::weight(1_000)]
         pub fn transfer(origin: OriginFor<T>, new_owner: T::AccountId, kitty_id: T::KittyIndex) -> DispatchResult {
             let who = ensure_signed(origin)?;
-
+            // Ensure transfer only from the OWNER of kitties.
             ensure!(Some(who.clone()) == Owner::<T>::get(kitty_id), Error::<T>::NotOwner);
 
-            Owner::<T>::insert(kitty_id, Some(new_owner.clone()));
+            let stake_amount = T::StakeForEachKitty::get();
 
+            // Staking from new owner and unstaking from the ex-ownder
+            T::Currency::reserve(&new_owner, stake_amount)
+                .map_err(|_| Error::<T>::NotEnoughBalanceForStaking)?;
+            T::Currency::unreserve(&who, stake_amount);
+
+            // Update storage.
+            Owner::<T>::insert(kitty_id, Some(new_owner.clone()));
+            // Emit the event.
             Self::deposit_event(Event::KittyTransfer(who, new_owner, kitty_id));
 
             Ok(())
@@ -151,27 +159,26 @@ pub mod pallet {
                 new_dna[i] = (selector[i] & dna_1[i]) | (!selector[i] & dna_2[i]);
             }
 
-            // Optimize with helper function new_kitty()
+            // Optimize with helper function new_kitty_with_stake()
             // ----------
-            let kitty_id = match Self::kitties_count() {
-                Some(id) => {
-                    ensure!(id != T::KittyIndex::max_value(), Error::<T>::KittiesCountOverflow);
-                    id
-                },
-                None => 0u32.into()
-            };
-            Kitties::<T>::insert(kitty_id, Some(Kitty(new_dna)));
-            Owner::<T>::insert(kitty_id, Some(who.clone()));
-            KittiesCount::<T>::put(kitty_id + 1u32.into());
-
-            Self::deposit_event(Event::KittyCreate(who, kitty_id));
+            // let kitty_id = match Self::kitties_count() {
+            //     Some(id) => {
+            //         ensure!(id != T::KittyIndex::max_value(), Error::<T>::KittiesCountOverflow);
+            //         id
+            //     },
+            //     None => 0u32.into()
+            // };
+            // Kitties::<T>::insert(kitty_id, Some(Kitty(new_dna)));
+            // Owner::<T>::insert(kitty_id, Some(who.clone()));
+            // KittiesCount::<T>::put(kitty_id + 1u32.into());
+            // Self::deposit_event(Event::KittyCreate(who, kitty_id));
             // ----------
-            // Self::new_kitty(&who, new_dna)?;
+            Self::new_kitty_with_stake(&who, new_dna)?;
 
             Ok(())
         }
 
-        /// Set a price and list a kitty for sale. (Allow set None means NOT_FOR_SALE.)
+        /// Set a price and list a kitty for sale. (Allow set None which means NOT_FOR_SALE.)
         #[pallet::weight(1_000)]
         pub fn sell(origin: OriginFor<T>, kitty_id: T::KittyIndex, price: Option<BalanceOf<T>>) -> DispatchResult {
             let who = ensure_signed(origin)?;
@@ -200,7 +207,8 @@ pub mod pallet {
 
             ensure!(buyer_balance > (amount + stake_amount), Error::<T>::NotEnoughBalanceForBuying);
 
-            T::Currency::reserve(&buyer, stake_amount).map_err(|_| Error::<T>::NotEnoughBalanceForStaking)?;
+            T::Currency::reserve(&buyer, stake_amount)
+                .map_err(|_| Error::<T>::NotEnoughBalanceForStaking)?;
 
 			T::Currency::unreserve(&owner, stake_amount);
 
@@ -229,7 +237,7 @@ pub mod pallet {
         }
 
         // Helper function for optimizing the codes from create() and transfer().
-/*        fn new_kitty(owner: &T::AccountId, dna: [u8; 16]) -> DispatchResult {
+        fn new_kitty_with_stake(owner: &T::AccountId, dna: [u8; 16]) -> DispatchResult {
 
             let kitty_id = match Self::kitties_count() {
                 Some(id) => {
@@ -239,6 +247,11 @@ pub mod pallet {
                 None => 0u32.into()
             };
 
+            let stake = T::StakeForEachKitty::get();
+
+            T::Currency::reserve(&owner, stake)
+                .map_err(|_| Error::<T>::NotEnoughBalanceForStaking)?;
+
             Kitties::<T>::insert(kitty_id, Some(Kitty(dna)));
             Owner::<T>::insert(kitty_id, Some(owner.clone()));
             KittiesCount::<T>::put(kitty_id + 1u32.into());
@@ -247,6 +260,6 @@ pub mod pallet {
 
             Ok(())
         }
-*/
+
    }
 }
