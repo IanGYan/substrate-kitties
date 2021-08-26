@@ -31,9 +31,11 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
         type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
+        // Define KittyIndex in Runtime.
         type KittyIndex: Parameter + AtLeast32BitUnsigned + Default + Copy + Bounded;
         type Currency: Currency<Self::AccountId> + ReservableCurrency<Self::AccountId>;
-
+        // Configurable constant for the amount of staking when create a kitty,
+        // to avoid the user create a big number of kitties to attract the chain.
         #[pallet::constant]
         type StakeForEachKitty: Get<BalanceOf<Self>>;
 	}
@@ -96,7 +98,7 @@ pub mod pallet {
 
             let dna = Self::random_value(&who);
 
-            // Optimize with helper function new_kitty_with_stake()
+            // Optimize with helper function new_kitty_with_stake() for the codes below:
             // ----------
             // let kitty_id = match Self::kitties_count() {
             //    Some(id) => {
@@ -159,7 +161,7 @@ pub mod pallet {
                 new_dna[i] = (selector[i] & dna_1[i]) | (!selector[i] & dna_2[i]);
             }
 
-            // Optimize with helper function new_kitty_with_stake()
+            // Optimize with helper function new_kitty_with_stake() for the codes below:
             // ----------
             // let kitty_id = match Self::kitties_count() {
             //     Some(id) => {

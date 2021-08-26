@@ -169,7 +169,7 @@ fn buy_failed_when_not_for_sale() {
 	new_test_ext().execute_with(|| {
 		// Prepare kitty index=0, by AccountID =1.
 		assert_ok!(KittiesModule::create(Origin::signed(1)));
-		// List Kitty index=0 for sale with a price=None, whitch means not for sale.
+		// List Kitty index=0 for sale with a price=None, which means not for sale.
 		assert_ok!(KittiesModule::sell(Origin::signed(1), 0, None));
 		// AccountID=2 buy KittyIndex=0 (from AccountID=1), but the kitty is not for sale.
 		assert_noop!(KittiesModule::buy(Origin::signed(2), 0), Error::<Test>::NotForSale);
