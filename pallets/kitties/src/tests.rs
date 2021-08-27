@@ -2,15 +2,6 @@ use crate::mock::{Event as TestEvent, new_test_ext, KittiesModule, Origin, Syste
 use frame_support::{assert_ok, assert_noop};
 use super::*;
 
-
-// Wrap System::assert_has_event() to macro assert_has_event!
-// Usage example: assert_has_event!(Event::<Test>::KittyCreated(1,0))
-macro_rules! assert_has_event {
-	($x:expr) => {
-		System::assert_has_event(TestEvent::KittiesModule($x))
-	}
-}
-
 #[test]
 fn create_works() {
 	new_test_ext().execute_with(|| {

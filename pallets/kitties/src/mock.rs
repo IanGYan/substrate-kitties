@@ -87,6 +87,16 @@ impl pallet_kitties::Config for Test {
 	type Currency = Balances;
 }
 
+// Helper macro.
+// Wrap System::assert_has_event() to macro assert_has_event!
+// Usage example: assert_has_event!(Event::<Test>::KittyCreated(1,0))
+#[macro_export]
+macro_rules! assert_has_event {
+	($x:expr) => {
+		System::assert_has_event(TestEvent::KittiesModule($x))
+	}
+}
+
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
 	let mut storage = system::GenesisConfig::default().build_storage::<Test>().unwrap();
